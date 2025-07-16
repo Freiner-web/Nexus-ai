@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-
+import UploadVideo from './UploadVideo';
 function App() {
   const [user, setUser] = useState(null);
 
