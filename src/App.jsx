@@ -1,46 +1,62 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import UploadVideo from './UploadVideo';
+
 function App() {
-  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+    // Check if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
     });
 
-    return () => authListener?.subscription.unsubscribe();
+    // Listen for login/logout changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogin = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google' });
+  // Google login
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
   };
 
-  const handleLogout = async () => {
+  // Sign out
+  const signOut = async () => {
     await supabase.auth.signOut();
-    setUser(null);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6">
-      <h1 className="text-4xl font-bold">Nexus 🚀</h1>
-      {!user ? (
-        <button onClick={handleLogin} className="bg-white text-black px-4 py-2 rounded">
-          Sign in with Google
-        </button>
-      ) : (
-        <>
-          <p className="text-lg">Welcome, {user.email}</p>
-          <button onClick={handleLogout} className="bg-red-500 px-4 py-2 rounded">
-            Logout
+    <div className="bg-black text-white min-h-screen p-6 font-sans">
+      <h1 className="text-3xl font-bold text-center mb-6">Nexus AI</h1>
+
+      {session ? (
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Welcome, Creator!</h2>
+          <button
+            onClick={signOut}
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded mb-6"
+          >
+            Sign Out
           </button>
-        </>
+          <UploadVideo />
+        </div>
+      ) : (
+        <div className="text-center">
+          <button
+            onClick={signInWithGoogle}
+            className="bg-white text-black px-4 py-2 rounded"
+          >
+            Login with Google
+          </button>
+        </div>
       )}
     </div>
   );
